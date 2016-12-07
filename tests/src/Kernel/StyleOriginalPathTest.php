@@ -94,7 +94,7 @@ class StyleOriginalPathTest extends KernelTestBase {
       $this->assertEquals(
         $original,
         $this->fetchManager->styleOriginalPath($uri, TRUE),
-        "URI with style '$name'' yields original file"
+        "URI with style '$name' yields original file"
       );
     }
 
