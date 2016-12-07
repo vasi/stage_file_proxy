@@ -8,13 +8,28 @@
 namespace Drupal\stage_file_proxy;
 
 use Drupal\Component\Utility\UrlHelper;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\StreamWrapper\PublicStream;
 use GuzzleHttp\ClientInterface;
 
 class FetchManager implements FetchManagerInterface {
 
-  public function __construct(ClientInterface $client) {
+  /**
+   * The storage for image styles.
+   *
+   * @var \Drupal\Core\Entity\EntityStorageInterface
+   */
+  protected $styleStorage;
+
+  /**
+   * FetchManager constructor.
+   *
+   * @param \GuzzleHttp\ClientInterface $client
+   *   The HTTP client.
+   */
+  public function __construct(ClientInterface $client, EntityTypeManagerInterface $typeManager) {
     $this->client = $client;
+    $this->styleStorage = $typeManager->getStorage('image_style');
   }
 
   /**
@@ -58,8 +73,28 @@ class FetchManager implements FetchManagerInterface {
     }
 
     // It is a styles path, so we extract the different parts.
+    // A styled path is like styles/[style_name]/[schema]/[original_path].
+    if (preg_match(',^styles/([^/]+)/([^/]+)/(.+)$,', $path, $matches)) {
+      list(, $style_name, $scheme, $original) = $matches;
+
+      // Does such a style exist?
+      /** @var \Drupal\image\ImageStyleInterface $style */
+      if (!($style = $this->styleStorage->load($style_name))) {
+        return FALSE;
+      }
+
+      // Check if we've had an extra extension added.
+      if (preg_match(',^(.*\.([^.]+))\.([^.]+)$,', $original, $matches)) {
+        list(, $ext_stripped, $ext1, $ext2) = $matches;
+        // If the derivative extension matches, we want the original extension.
+        if ($style->getDerivativeExtension($ext1) === $ext2) {
+          $original = $ext_stripped;
+        }
+      }
+
+      return $scheme . '://' . $original;
+    }
     if (strpos($path, 'styles') === 0) {
-      // Then the path is like styles/[style_name]/[schema]/[original_path].
       return preg_replace('/styles\/.*\/(.*)\/(.*)/U', '$1://$2', $path);
     }
     // Else it seems to be the original.

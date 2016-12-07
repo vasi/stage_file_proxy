@@ -12,8 +12,6 @@ use GuzzleHttp\ClientInterface;
 
 interface FetchManagerInterface {
 
-  public function __construct(ClientInterface $client);
-
   /**
    * Downloads a remote file and saves it to the local files directory.
    *
