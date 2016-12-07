@@ -73,6 +73,12 @@ class StyleOriginalPathTest extends KernelTestBase {
     /** @var ImageStyleInterface[] $styles */
     $styles = [];
     $styles['basic'] = $style_storage->create(['name' => 'basic']);
+    // This style will change the file extension!
+    $styles['convert'] = $style_storage->create(['name' => 'convert']);
+    $styles['convert']->addImageEffect([
+      'id' => 'image_convert',
+      'data' => ['extension' => 'jpeg'],
+    ]);
     foreach ($styles as $style) {
       $style->save();
     }
